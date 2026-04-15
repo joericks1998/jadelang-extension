@@ -1,0 +1,105 @@
+// Jade language syntax highlighting demo
+
+// --- Structs and interfaces ---
+
+interface Describable {
+    fn describe(self) -> str
+}
+
+struct Animal {
+    name,
+    legs,
+    sound
+}
+
+extend Animal: Describable {
+    fn describe(self) -> str {
+        return f"{self.name} has {self.legs} legs and says {self.sound}"
+    }
+
+    fn is_bipedal(self) {
+        return self.legs == 2
+    }
+}
+
+// --- Functions and recursion ---
+
+fn factorial(n) {
+    if n <= 1 {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+fn range(n) {
+    let result = []
+    let i = 0
+    while i < n {
+        result[len(result)] = i
+        i = i + 1
+    }
+    return result
+}
+
+// --- Closures and pipe operator ---
+
+let double = |x| x * 2
+let add = |x, y| x + y
+
+let nums = [1, 2, 3, 4, 5]
+for n in nums {
+    let r = n |> double |> double
+    print(r)
+}
+
+// --- Exception handling ---
+
+fn safe_divide(a, b) {
+    if b == 0 {
+        raise "division by zero"
+    }
+    return a / b
+}
+
+try {
+    let result = safe_divide(10, 0)
+    print(result)
+} catch e {
+    print(f"caught: {e}")
+}
+
+// --- Operators and types ---
+
+let x = 42
+let y = 3.14
+let flag = true
+let bits = 0b1010 & 6
+let shifted = 8 >> 1
+let piped = 5 |> add(3)
+
+// --- Prompt declarations (jade green) ---
+
+prompt summary = "Summarize the Jade language in one sentence."
+prompt score: int = "Rate the readability of Jade from 1 to 10."
+prompt is_simple: bool = "Is Jade a simple language? Answer true or false."
+
+// --- Using prompt dereferences (jade green) ---
+
+let description = ?summary
+let rating = ?score
+let simple = ?is_simple
+
+print(description)
+print(f"Readability score: {rating}")
+print(f"Simple language: {simple}")
+
+// --- Main demo ---
+
+let dog = Animal { name: "Dog", legs: 4, sound: "woof" }
+let bird = Animal { name: "Bird", legs: 2, sound: "tweet" }
+
+print(dog.describe())
+print(bird.describe())
+print(f"Bird is bipedal: {bird.is_bipedal()}")
+print(f"5! = {factorial(5)}")
+print(f"2 + 3 = {add(2, 3)}")

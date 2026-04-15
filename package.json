@@ -1,0 +1,50 @@
+{
+  "name": "jadelang-extension",
+  "displayName": "Jade Language",
+  "description": "Syntax highlighting for the Jade programming language (.jde files)",
+  "version": "0.0.1",
+  "publisher": "joericks",
+  "engines": {
+    "vscode": "^1.75.0"
+  },
+  "categories": ["Programming Languages"],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/joericks/jadelang-vscode-extension"
+  },
+  "contributes": {
+    "languages": [
+      {
+        "id": "jadelang",
+        "aliases": ["Jade", "jade", "JadeLang"],
+        "extensions": [".jde"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "jadelang",
+        "scopeName": "source.jade",
+        "path": "./syntaxes/jade.tmLanguage.json"
+      }
+    ],
+    "configurationDefaults": {
+      "editor.tokenColorCustomizations": {
+        "textMateRules": [
+          {
+            "scope": "keyword.other.prompt.jade",
+            "settings": {
+              "foreground": "#00A86B"
+            }
+          },
+          {
+            "scope": "support.function.builtin.jade",
+            "settings": {
+              "foreground": "#0095ff"
+            }
+          }
+        ]
+      }
+    }
+  }
+}
