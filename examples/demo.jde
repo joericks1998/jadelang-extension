@@ -103,3 +103,91 @@ print(bird.describe())
 print(f"Bird is bipedal: {bird.is_bipedal()}")
 print(f"5! = {factorial(5)}")
 print(f"2 + 3 = {add(2, 3)}")
+
+// --- Literals: nil family, single/triple-quoted strings, binary ints ---
+
+let empty1 = nil
+let empty2 = None
+let empty3 = null
+
+let single = 'hello'
+let block  = """
+multi
+line
+"""
+let block2 = '''
+also
+multi
+line
+'''
+let mask = 0b1010 & 6
+
+let single_f = f'single-quoted f-string: {mask}'
+let block_f  = f"""
+triple f-string
+value: {single}
+"""
+
+// --- Imports: ::, from ... use, as ---
+
+use std::math
+use std::string as strlib
+from std::random use int, choice
+
+let root = math.sqrt(144.0)
+let roll = int(1, 6)
+
+// --- Async / await ---
+
+async fn ask(q) {
+    prompt p = q
+    return await ?p
+}
+
+let future = ask("What is the capital of France?")
+let answer = await future
+
+// --- Typed catch arm ---
+
+struct ValueError {
+    message
+}
+
+try {
+    raise ValueError { message: "bad input" }
+} catch ValueError e {
+    print(e.message)
+} catch e {
+    print("unexpected error")
+}
+
+// --- Session variables ---
+
+print(__tokens__)
+print(__model__)
+print(__max_retries__)
+
+// --- Decorators ---
+
+@tools::register
+fn get_weather(city) {
+    return f"Sunny in {city}"
+}
+
+@retry(3)
+@route(on = "action")
+async fn handle_action(payload) {
+    return await payload
+}
+
+@log("City")
+struct City {
+    name
+}
+
+@route("action")
+extend City {
+    fn describe(self) {
+        return f"City: {self.name}"
+    }
+}

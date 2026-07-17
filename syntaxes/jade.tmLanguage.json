@@ -5,14 +5,25 @@
   "fileTypes": ["jde"],
   "patterns": [
     { "include": "#comment" },
-    { "include": "#fstring" },
-    { "include": "#string" },
+    { "include": "#fstring-triple-double" },
+    { "include": "#fstring-triple-single" },
+    { "include": "#fstring-double" },
+    { "include": "#fstring-single" },
+    { "include": "#string-triple-double" },
+    { "include": "#string-triple-single" },
+    { "include": "#string-double" },
+    { "include": "#string-single" },
     { "include": "#prompt-deref" },
+    { "include": "#exception-catch-typed" },
+    { "include": "#decorator" },
     { "include": "#function-declaration" },
     { "include": "#type-declaration" },
+    { "include": "#struct-literal" },
     { "include": "#keywords" },
     { "include": "#storage-types" },
     { "include": "#constants" },
+    { "include": "#constants-nil" },
+    { "include": "#session-variables" },
     { "include": "#numbers" },
     { "include": "#support-functions" },
     { "include": "#closure-params" },
@@ -24,40 +35,97 @@
       "match": "//.*$"
     },
 
-    "fstring": {
+    "escape": {
+      "name": "constant.character.escape.jade",
+      "match": "\\\\."
+    },
+
+    "fstring-interpolation": {
+      "comment": "shared {expr} interpolation body for all f-string variants",
+      "name": "meta.embedded.line.jade",
+      "begin": "\\{",
+      "beginCaptures": {
+        "0": { "name": "punctuation.section.embedded.begin.jade" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.section.embedded.end.jade" }
+      },
+      "patterns": [{ "include": "$self" }]
+    },
+
+    "fstring-triple-double": {
+      "comment": "f\"\"\"...{expr}...\"\"\" — must be tried before fstring-double so the closing triple-quote isn't mistaken for an empty string",
+      "name": "string.quoted.triple.jade",
+      "begin": "f\"\"\"",
+      "end": "\"\"\"",
+      "patterns": [
+        { "include": "#fstring-interpolation" },
+        { "include": "#escape" }
+      ]
+    },
+
+    "fstring-triple-single": {
+      "comment": "f'''...{expr}...''' — single-quote triple variant",
+      "name": "string.quoted.triple.jade",
+      "begin": "f'''",
+      "end": "'''",
+      "patterns": [
+        { "include": "#fstring-interpolation" },
+        { "include": "#escape" }
+      ]
+    },
+
+    "fstring-double": {
       "name": "string.quoted.double.jade",
       "begin": "f\"",
       "end": "\"",
       "patterns": [
-        {
-          "name": "meta.embedded.line.jade",
-          "begin": "\\{",
-          "beginCaptures": {
-            "0": { "name": "punctuation.section.embedded.begin.jade" }
-          },
-          "end": "\\}",
-          "endCaptures": {
-            "0": { "name": "punctuation.section.embedded.end.jade" }
-          },
-          "patterns": [{ "include": "$self" }]
-        },
-        {
-          "name": "constant.character.escape.jade",
-          "match": "\\\\."
-        }
+        { "include": "#fstring-interpolation" },
+        { "include": "#escape" }
       ]
     },
 
-    "string": {
+    "fstring-single": {
+      "comment": "f'...{expr}...' — single-quote f-strings are equivalent to double-quote ones",
+      "name": "string.quoted.single.jade",
+      "begin": "f'",
+      "end": "'",
+      "patterns": [
+        { "include": "#fstring-interpolation" },
+        { "include": "#escape" }
+      ]
+    },
+
+    "string-triple-double": {
+      "comment": "\"\"\"...\"\"\" multi-line string — must be tried before string-double",
+      "name": "string.quoted.triple.jade",
+      "begin": "\"\"\"",
+      "end": "\"\"\"",
+      "patterns": [{ "include": "#escape" }]
+    },
+
+    "string-triple-single": {
+      "comment": "'''...''' multi-line string — single-quote triple variant",
+      "name": "string.quoted.triple.jade",
+      "begin": "'''",
+      "end": "'''",
+      "patterns": [{ "include": "#escape" }]
+    },
+
+    "string-double": {
       "name": "string.quoted.double.jade",
       "begin": "\"",
       "end": "\"",
-      "patterns": [
-        {
-          "name": "constant.character.escape.jade",
-          "match": "\\\\."
-        }
-      ]
+      "patterns": [{ "include": "#escape" }]
+    },
+
+    "string-single": {
+      "comment": "'...' single-quote strings are equivalent to double-quote ones",
+      "name": "string.quoted.single.jade",
+      "begin": "'",
+      "end": "'",
+      "patterns": [{ "include": "#escape" }]
     },
 
     "prompt-deref": {
@@ -67,6 +135,35 @@
         "1": { "name": "keyword.other.prompt.jade" },
         "2": { "name": "variable.other.jade" }
       }
+    },
+
+    "exception-catch-typed": {
+      "comment": "catch TypeName binding — TypeName gets type coloring; catch-all `catch e` falls through to the plain keyword rule since bindings are lowercase",
+      "match": "\\b(catch)\\s+([A-Z][A-Za-z0-9_]*)\\b",
+      "captures": {
+        "1": { "name": "keyword.control.jade" },
+        "2": { "name": "entity.name.type.jade" }
+      }
+    },
+
+    "decorator": {
+      "comment": "@name or @ns::name preceding fn/async fn/struct/extend, e.g. `@tools::register`, `@route(on = \"action\")`. Confirmed against jade's own parser_tests.rs (parse_decorators): stacks (one per line), optional (args), positional and `key = value` forms. Ends right before `(` — the argument list itself is left to the normal top-level rules (strings, numbers, operators, nested struct literals all already tokenize correctly there, same as any other call's parens).",
+      "begin": "(@)([A-Za-z_][A-Za-z0-9_]*)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.decorator.jade" },
+        "2": { "name": "entity.name.function.decorator.jade" }
+      },
+      "end": "(?=[^A-Za-z0-9_:\\s]|$)",
+      "patterns": [
+        {
+          "name": "keyword.operator.path.jade",
+          "match": "::"
+        },
+        {
+          "name": "entity.name.function.decorator.jade",
+          "match": "[A-Za-z_][A-Za-z0-9_]*"
+        }
+      ]
     },
 
     "function-declaration": {
@@ -100,15 +197,23 @@
       ]
     },
 
+    "struct-literal": {
+      "comment": "TypeName { ... } struct instantiation — highlights the type name at the call site, e.g. `Point { x: 10 }`",
+      "match": "\\b([A-Z][A-Za-z0-9_]*)\\b(?=\\s*\\{)",
+      "captures": {
+        "1": { "name": "entity.name.type.jade" }
+      }
+    },
+
     "keywords": {
       "patterns": [
         {
           "name": "keyword.control.jade",
-          "match": "\\b(if|elif|else|while|for|in|return|try|catch|raise)\\b"
+          "match": "\\b(if|elif|else|while|for|in|return|try|catch|raise|await)\\b"
         },
         {
           "name": "keyword.declaration.jade",
-          "match": "\\b(let|fn|struct|extend|interface|use)\\b"
+          "match": "\\b(let|fn|struct|extend|interface|use|async|from|as)\\b"
         },
         {
           "comment": "prompt keyword — same jade-green scope as ?deref",
@@ -133,8 +238,25 @@
       "match": "\\b(true|false)\\b"
     },
 
+    "constants-nil": {
+      "comment": "nil, None, and null are interchangeable spellings of the same absence-of-value literal",
+      "name": "constant.language.null.jade",
+      "match": "\\b(nil|None|null)\\b"
+    },
+
+    "session-variables": {
+      "comment": "read-only-by-convention globals pre-populated by the runtime: __tokens__, __model__, __max_retries__, __retry_log__",
+      "name": "variable.language.jade",
+      "match": "\\b__[a-zA-Z_]+__\\b"
+    },
+
     "numbers": {
       "patterns": [
+        {
+          "comment": "binary integer literal — must precede the generic integer rule so 0b1010 isn't split into 0 + b1010",
+          "name": "constant.numeric.integer.jade",
+          "match": "\\b0b[01]+\\b"
+        },
         {
           "name": "constant.numeric.float.jade",
           "match": "\\b\\d+\\.\\d+\\b"
@@ -148,7 +270,7 @@
 
     "support-functions": {
       "name": "support.function.builtin.jade",
-      "match": "\\b(print|len)\\b(?=\\s*\\()"
+      "match": "\\b(print|len|write|input)\\b(?=\\s*\\()"
     },
 
     "closure-params": {
@@ -171,6 +293,11 @@
 
     "operators": {
       "patterns": [
+        {
+          "comment": "module-path separator — use std::math, from std::math use floor, @tools::register",
+          "name": "keyword.operator.path.jade",
+          "match": "::"
+        },
         {
           "name": "keyword.operator.pipe.jade",
           "match": "\\|>"

@@ -42,6 +42,96 @@
             "settings": {
               "foreground": "#0095ff"
             }
+          },
+          {
+            "scope": "keyword.control.jade",
+            "settings": {
+              "foreground": "#C586C0"
+            }
+          },
+          {
+            "scope": "keyword.declaration.jade",
+            "settings": {
+              "foreground": "#4FA6E0"
+            }
+          },
+          {
+            "scope": "keyword.other.jade",
+            "settings": {
+              "foreground": "#8AA3B0"
+            }
+          },
+          {
+            "scope": "keyword.operator.path.jade",
+            "settings": {
+              "foreground": "#7A93A6"
+            }
+          },
+          {
+            "scope": "storage.type.jade",
+            "settings": {
+              "foreground": "#4EC9B0"
+            }
+          },
+          {
+            "scope": "constant.language.boolean.jade",
+            "settings": {
+              "foreground": "#4FC1FF"
+            }
+          },
+          {
+            "scope": "constant.language.null.jade",
+            "settings": {
+              "foreground": "#4FC1FF"
+            }
+          },
+          {
+            "scope": ["constant.numeric.integer.jade", "constant.numeric.float.jade"],
+            "settings": {
+              "foreground": "#8FD19E"
+            }
+          },
+          {
+            "scope": "entity.name.function.jade",
+            "settings": {
+              "foreground": "#5FB3B3"
+            }
+          },
+          {
+            "scope": "entity.name.type.jade",
+            "settings": {
+              "foreground": "#4EC9B0"
+            }
+          },
+          {
+            "scope": "entity.other.inherited-class.jade",
+            "settings": {
+              "foreground": "#7FCB9C"
+            }
+          },
+          {
+            "scope": "variable.language.jade",
+            "settings": {
+              "foreground": "#4FA6E0"
+            }
+          },
+          {
+            "scope": "variable.parameter.jade",
+            "settings": {
+              "foreground": "#9CDCFE"
+            }
+          },
+          {
+            "scope": "punctuation.decorator.jade",
+            "settings": {
+              "foreground": "#8AA3B0"
+            }
+          },
+          {
+            "scope": "entity.name.function.decorator.jade",
+            "settings": {
+              "foreground": "#7FD1AE"
+            }
           }
         ]
       }
