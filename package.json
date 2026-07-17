@@ -18,7 +18,11 @@
         "id": "jadelang",
         "aliases": ["Jade", "jade", "JadeLang"],
         "extensions": [".jde"],
-        "configuration": "./language-configuration.json"
+        "configuration": "./language-configuration.json",
+        "icon": {
+          "light": "./assets/Vector.svg",
+          "dark": "./assets/Vector.svg"
+        }
       }
     ],
     "grammars": [
