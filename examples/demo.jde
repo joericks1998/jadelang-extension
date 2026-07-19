@@ -93,6 +93,26 @@ print(description)
 print(f"Readability score: {rating}")
 print(f"Simple language: {simple}")
 
+// --- Member prompt dereference: obj~>p is sugar for obj.(?p) ---
+
+struct Critic {
+    name
+}
+
+extend Critic {
+    fn review(self) {
+        prompt verdict = f"{self.name} reviews Jade in one word."
+        return ?verdict
+    }
+}
+
+let critic = Critic { name: "Ada" }
+
+let verdict_long  = critic.(?verdict)
+let verdict_short = critic~>verdict
+
+print(verdict_short)
+
 // --- Main demo ---
 
 let dog = Animal { name: "Dog", legs: 4, sound: "woof" }

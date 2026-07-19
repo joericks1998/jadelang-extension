@@ -80,7 +80,7 @@ Status legend:
 | Arithmetic `+ - * / %` | `3 + 4` | ✅ | `operators` → arithmetic. |
 | Unary `- ! ~` | `-5`, `!true`, `~0` | ✅ | Covered by arithmetic/logical/bitwise rules (unary and binary forms share the same token). |
 | Bitwise `& \| ^ ~ << >>` | `6 & 3` | ✅ | `operators` → bitwise. |
-| `~>` | `a ~> b` | ✅ | **Implemented (2026-07-19).** Cosmetic token, scoped `keyword.other.prompt.jade` so it renders in brand jade green alongside `prompt` and `?`. Listed first in `operators` so the `~` and `>` aren't split into separate bitwise/comparison tokens; verified standalone `~` and `>` still tokenize as before. |
+| `~>` (member prompt deref) | `obj~>p` | ✅ | **Implemented (2026-07-19).** Sugar for `obj.(?p)` — a prompt dereference on a member, named by analogy to C++'s pointer `->`. See §12 for the full rule; listed in `operators` too as a bare fallback so a `~>` not followed by an identifier still renders green rather than splitting into bitwise `~` + comparison `>`. |
 | Logical `&& \|\| !` | `true && false` | ✅ | `operators` → logical. |
 | Comparison `== != < > <= >=` | `3 == 3` | ✅ | `operators` → comparison. |
 | Assignment `=` | `x = 5` | ✅ | Negative lookbehind/lookahead correctly excludes `==`, `!=`, `<=`, `>=`. |
@@ -174,6 +174,7 @@ These were added exactly as planned: `await` joined `keyword.control.jade`, `asy
 | `prompt name = "..."` | `prompt p = "..."` | ✅ | `prompt` scoped specially (`keyword.other.prompt.jade`, "jade green") in `keywords`. |
 | Typed prompt binding | `prompt score: int = "..."` | ✅ | `prompt` keyword + `:` + `storage-types` all already compose correctly; no new rule needed. |
 | Untyped dereference `?p` | `let r = ?p` | ✅ | `prompt-deref` rule, `?` and the name separately captured. |
+| **Member dereference `obj~>p`** | `let v = critic~>verdict` | ✅ | **Implemented (2026-07-19).** Sugar for the explicit `obj.(?p)` form — dereferences prompt `p` on `obj`, named by analogy to C++'s pointer `->`. New `prompt-member-deref` rule captures `~>` as `keyword.other.prompt.jade` and the prompt name as `variable.other.jade`, so it renders identically to `?p`. Listed before `prompt-deref` and before `operators` so the name isn't left unstyled and the `~`/`>` aren't split into bitwise + comparison tokens. Verified: `critic~>verdict`, spaced `obj ~> p`, chained `a~>b~>c`, the desugared `critic.(?verdict)`, and the non-regressions `~a` (bitwise) and `a > b` (comparison) all tokenize correctly. |
 | Typed dereference `?p \|> type` | `let n = ?p \|> int` | ✅ (implicit) | Composition of existing `prompt-deref` + pipe operator + `storage-types` — no new rule needed. |
 | `async fn` + `await ?p` | see §8 | ✅ | Unblocked — §8's `async`/`await` keywords are implemented. |
 | Session variables `__tokens__`, `__model__`, `__max_retries__`, `__retry_log__` | `print(__tokens__)` | ✅ | **Implemented.** New `session-variables` rule matching `\b__[a-zA-Z_]+__\b`, scoped `variable.language.jade` — verified all three example vars tokenize correctly and are visually distinct from ordinary identifiers via the new color rule. |
