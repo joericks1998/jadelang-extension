@@ -299,12 +299,13 @@
           "match": "::"
         },
         {
-          "name": "keyword.operator.pipe.jade",
-          "match": "\\|>"
+          "comment": "~> — jade-green like `prompt` and `?`. Must precede the bitwise and comparison rules so the ~ and > aren't tokenized separately.",
+          "name": "keyword.other.prompt.jade",
+          "match": "~>"
         },
         {
-          "name": "keyword.operator.arrow.jade",
-          "match": "->"
+          "name": "keyword.operator.pipe.jade",
+          "match": "\\|>"
         },
         {
           "name": "keyword.operator.logical.jade",
