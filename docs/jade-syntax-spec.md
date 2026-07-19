@@ -80,11 +80,12 @@ Status legend:
 | Arithmetic `+ - * / %` | `3 + 4` | ✅ | `operators` → arithmetic. |
 | Unary `- ! ~` | `-5`, `!true`, `~0` | ✅ | Covered by arithmetic/logical/bitwise rules (unary and binary forms share the same token). |
 | Bitwise `& \| ^ ~ << >>` | `6 & 3` | ✅ | `operators` → bitwise. |
+| `~>` | `a ~> b` | ✅ | **Implemented (2026-07-19).** Cosmetic token, scoped `keyword.other.prompt.jade` so it renders in brand jade green alongside `prompt` and `?`. Listed first in `operators` so the `~` and `>` aren't split into separate bitwise/comparison tokens; verified standalone `~` and `>` still tokenize as before. |
 | Logical `&& \|\| !` | `true && false` | ✅ | `operators` → logical. |
 | Comparison `== != < > <= >=` | `3 == 3` | ✅ | `operators` → comparison. |
 | Assignment `=` | `x = 5` | ✅ | Negative lookbehind/lookahead correctly excludes `==`, `!=`, `<=`, `>=`. |
 | Pipe `\|>` | `5 \|> double` | ✅ | `operators` → pipe, and matched *before* the closure-params rule so `\|>` isn't misparsed as a closure start. |
-| Arrow `->` (return-type annotation) | `fn describe(self) -> str` | ✅ | `operators` → arrow. |
+| Arrow `->` | — | ➖ | **Removed as a syntax item (2026-07-19)** at the maintainer's direction. The dedicated `keyword.operator.arrow.jade` rule is gone; the characters now fall through to the generic arithmetic (`-`) and comparison (`>`) rules rather than forming one token. |
 | **Module-path separator `::`** | `use std::math`, `from std::math use floor`, `use utils::math`, `@tools::register` | ✅ | **Implemented.** New `keyword.operator.path.jade` rule (`match: "::"`), listed first in `operators` so it's never mistaken for two single-colon punctuation tokens. Decorator usage (`@tools::register`) still won't highlight the `@name` part itself — that's §13, held. |
 
 ---
@@ -133,7 +134,7 @@ These were added exactly as planned: `await` joined `keyword.control.jade`, `asy
 | Construct | Example | Status | Notes |
 |---|---|---|---|
 | `struct Name { field, field }` | `struct Point { x, y }` | ✅ | `type-declaration` rule. |
-| `interface Name { fn sig(...) -> type }` | `interface Describable { fn describe(self) -> str }` | ✅ | `interface` is in both `type-declaration`'s alternation and `keywords`' declaration group. **Caveat:** the fetched docs' page index (Quick Start → ... → Changelog) does **not** include a dedicated "Interfaces" reference page — only a one-line changelog mention (v1.0.7: "Added `interface` definitions and `extend Type: Interface` conformance checking") and the site's own summary blurb confirm the feature exists and is stable, but no full syntax reference (e.g. optional method bodies, multiple interface inheritance) was published at fetch time. Grammar support here is already ahead of the published docs; treat `examples/demo.jde` as the current best syntax reference for this feature. |
+| `interface Name { fn sig(...) }` | `interface Describable { fn describe(self) }` | ✅ | Return-type annotations were removed from the language (2026-07-19); signatures are now bare. `interface` is in both `type-declaration`'s alternation and `keywords`' declaration group. **Caveat:** the fetched docs' page index (Quick Start → ... → Changelog) does **not** include a dedicated "Interfaces" reference page — only a one-line changelog mention (v1.0.7: "Added `interface` definitions and `extend Type: Interface` conformance checking") and the site's own summary blurb confirm the feature exists and is stable, but no full syntax reference (e.g. optional method bodies, multiple interface inheritance) was published at fetch time. Grammar support here is already ahead of the published docs; treat `examples/demo.jde` as the current best syntax reference for this feature. |
 | `extend Name { fn method(self, ...) { } }` | see docs | ✅ | `type-declaration` rule. |
 | `extend Name: Interface { }` | `extend Animal: Describable { }` | ✅ | Same rule, capture group 3. |
 | Struct instantiation | `Point { x: 10, y: 20 }` | ✅ | **Implemented.** New `struct-literal` rule matches a capitalized identifier followed by `{` and scopes it `entity.name.type.jade`. Verified against `Animal { name: "Dog", ... }` and struct-literal-as-raise-argument (`raise ValueError { message: "..." }`) — both highlight correctly, and definitions (`struct Animal {`) still resolve via the earlier `type-declaration` rule without double-matching (it wins on start position since it begins at the keyword). |
@@ -226,7 +227,7 @@ rather than depending on how each theme happens to color generic TextMate scopes
 
 | Scope | Color | Role |
 |---|---|---|
-| `keyword.other.prompt.jade` | `#00A86B` | Brand green — `prompt`, `?deref` |
+| `keyword.other.prompt.jade` | `#00A86B` | Brand green — `prompt`, `?deref`, `~>` |
 | `support.function.builtin.jade` | `#0095ff` | Blue — `print`, `len`, `write`, `input` |
 | `keyword.control.jade` | `#C586C0` | Violet — `if`/`while`/`return`/`await`/etc. |
 | `keyword.declaration.jade` | `#4FA6E0` | Blue — `let`/`fn`/`use`/`async`/`from`/`as`/etc. |
@@ -260,6 +261,6 @@ Structs: `struct`, `extend`, `extend … : Interface`, `interface`, field access
 Exceptions: `raise`, `try`/`catch`, typed `catch TypeName binding`
 Imports: `use "path" as alias`, `use pkg::sub`, `from pkg::sub use a, b`, library imports via `jade.toml [lib]`, native imports via `jade.toml [native]`
 LLM: `prompt`, `?deref`, `?deref |> type`, session vars (`__tokens__` etc.), `use llm` runtime config
-Operators: `+ - * / %`, `& | ^ ~ << >>`, `&& || !`, `== != < > <= >=`, `=`, `|>`, `->`, `::`
+Operators: `+ - * / %`, `& | ^ ~ << >>`, `&& || !`, `== != < > <= >=`, `=`, `|>`, `::`, `~>`
 Decorators: `@name`, `@ns::name` (undocumented shape)
 Built-ins: `print`, `write`, `len`, `input`
