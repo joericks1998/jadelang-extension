@@ -46,6 +46,9 @@ Status legend:
 | Triple-quoted string (multi-line) | `"""...\n..."""` | ✅ | **Implemented & bug fixed.** New `string-triple-double` rule (begin/end on `"""`), placed *before* `string-double` in the top-level `patterns` list so the 3-char delimiter is tried first — confirmed via tokenizer that the closing `"""` no longer prematurely ends the string on its second character. |
 | Triple-quoted single-quote string | `'''...\n...'''` | ✅ | **Implemented.** New `string-triple-single` rule, same fix pattern. |
 | F-string (double quote) | `f"hi {name}"` | ✅ | `fstring-double` rule; interpolation body factored into shared `fstring-interpolation` fragment. |
+| **F-string interpolation coloring** | `f"n = {glib.g_basename(p)}"` | ✅ | **Fixed.** The `{expr}` body previously inherited the enclosing string foreground, so an interpolation full of real code rendered as one flat orange run. `meta.embedded.line.jade` now carries a foreground rule in `configurationDefaults` that resets interpolated code to normal code coloring (deepest-scope-wins beats the theme's `string` rule), and the `{`/`}` delimiters get `punctuation.section.embedded.*` in muted slate `#8AA3B0` (shared with the `@` sigil and `self`), so they read as quiet structural punctuation and the interpolated code itself carries the contrast against the string. Nested string literals inside the interpolation still tokenize as strings. |
+| **Nested braces in interpolation** | `f"pt = {Point { x: 1 }}"` | ✅ | **Fixed.** New self-recursive `fstring-nested-braces` rule — dict/struct literals inside `{...}` no longer let the first inner `}` close the interpolation early. |
+| **Comments cannot leak into interpolation** | `f"{a // b}"` | ✅ | **Fixed.** Interpolations include a new `expression` fragment (the top-level pattern list minus `comment`) instead of `$self`, so a `//` inside `{...}` can't swallow the closing brace, the closing quote, and the rest of the line. |
 | **F-string (single quote)** | `f'hi {name}'` | ✅ | **Implemented.** New `fstring-single` rule — verified `{expr}` interpolation still nests correctly inside it. |
 | **Triple-quoted f-string** | `f"""...{expr}..."""` / `f'''...{expr}...'''` | ✅ | **Implemented.** New `fstring-triple-double` / `fstring-triple-single` rules, tried before their non-triple counterparts. |
 | Escape sequences | `\n`, `\"`, `\\` | ✅ | `\\.` inside string/fstring rules. |
@@ -106,6 +109,8 @@ Status legend:
 | Construct | Example | Status | Notes |
 |---|---|---|---|
 | `fn name(params) { }` | `fn add(a, b) { }` | ✅ | `function-declaration` rule scopes name as `entity.name.function.jade`. |
+| **Function invocation** | `factorial(5)`, `bird.is_bipedal()`, `pkg::helper(3)` | ✅ | **Implemented.** New `function-call` rule, `\b([A-Za-z_][A-Za-z0-9_]*)\s*(?=\()` → `entity.name.function.call.jade` (`#B392F0` violet, distinct from the `#5FB3B3` used at *definition* sites). A single rule covers plain calls, `extend`-block method calls, other dot-calls, and module-path calls, because `\b` matches after `.` and `:` just as after a space — the receiver and the separators fall through to their own rules and only the callee is captured. **Ordering is load-bearing:** the rule sits after `keywords`, `storage-types`, `constants` and `support-functions` in the `expression` list, since all of those match the same bare-identifier shape; placing it earlier repaints `if (x)` as a call and steals `print(`'s builtin blue. `fn name(` is claimed earlier still by `function-declaration`. Verified: `if (x)`/`while (a)` keep control coloring, `print`/`len`/`write` keep builtin blue, `@retry(3)` stays a decorator, `Animal { … }` stays a struct literal, and calls nested inside f-string interpolations highlight correctly. |
+| **Known ambiguity: `int(1, 6)`** | `from std::random use int` | ⚠️ | `int` is both a primitive type name and an importable stdlib function. `storage-types` is ordered before `function-call`, so `int(1, 6)` renders as a type (`#4EC9B0`), not a call. Kept that way deliberately — flipping the order would fix the call site but mis-color nothing else of value, and a bare `int` annotation is the far more common occurrence. Same applies to `float`/`bool`/`str`. |
 | Implicit return (bare final expr) | `fn double(x) { x * 2 }` | N/A | No token difference from any other expression statement — nothing to add. |
 | Closure, single-expr body | `\|x\| x * 2` | ✅ | `closure-params` rule, carefully guarded against bitwise `\|` via lookbehind/lookahead. |
 | Closure, block body | `\|x\| { ... }` | ✅ (implicit) | Params rule handles the `\|x\|` part; `{ }` block recurses through `$self` via top-level `patterns`. |
@@ -140,7 +145,7 @@ These were added exactly as planned: `await` joined `keyword.control.jade`, `asy
 | Struct instantiation | `Point { x: 10, y: 20 }` | ✅ | **Implemented.** New `struct-literal` rule matches a capitalized identifier followed by `{` and scopes it `entity.name.type.jade`. Verified against `Animal { name: "Dog", ... }` and struct-literal-as-raise-argument (`raise ValueError { message: "..." }`) — both highlight correctly, and definitions (`struct Animal {`) still resolve via the earlier `type-declaration` rule without double-matching (it wins on start position since it begins at the keyword). |
 | Field access | `p.x` | ✅ (implicit) | Dot + identifier, no rule needed. |
 | Field assignment | `p.x = 99` | ✅ (implicit) | Same. |
-| Method call | `c.increment()` | ✅ (implicit) | Same (see §7 note on optional stdlib-method coloring). |
+| Method call | `c.increment()` | ✅ | **Now explicit.** The receiver and `.` stay unstyled (matching plain field access, `p.x`), and the method name is picked up by the `function-call` rule described in §7. |
 
 ---
 
@@ -177,7 +182,7 @@ These were added exactly as planned: `await` joined `keyword.control.jade`, `asy
 | **Member dereference `obj~>p`** | `let v = critic~>verdict` | ✅ | **Implemented (2026-07-19).** Sugar for the explicit `obj.(?p)` form — dereferences prompt `p` on `obj`, named by analogy to C++'s pointer `->`. New `prompt-member-deref` rule captures `~>` as `keyword.other.prompt.jade` and the prompt name as `variable.other.jade`, so it renders identically to `?p`. Listed before `prompt-deref` and before `operators` so the name isn't left unstyled and the `~`/`>` aren't split into bitwise + comparison tokens. Verified: `critic~>verdict`, spaced `obj ~> p`, chained `a~>b~>c`, the desugared `critic.(?verdict)`, and the non-regressions `~a` (bitwise) and `a > b` (comparison) all tokenize correctly. |
 | Typed dereference `?p \|> type` | `let n = ?p \|> int` | ✅ (implicit) | Composition of existing `prompt-deref` + pipe operator + `storage-types` — no new rule needed. |
 | `async fn` + `await ?p` | see §8 | ✅ | Unblocked — §8's `async`/`await` keywords are implemented. |
-| Session variables `__tokens__`, `__model__`, `__max_retries__`, `__retry_log__` | `print(__tokens__)` | ✅ | **Implemented.** New `session-variables` rule matching `\b__[a-zA-Z_]+__\b`, scoped `variable.language.jade` — verified all three example vars tokenize correctly and are visually distinct from ordinary identifiers via the new color rule. |
+| ~~Session variables `__tokens__`, `__model__`, `__max_retries__`, `__retry_log__`~~ | ~~`print(__tokens__)`~~ | ➖ | **Removed.** The language no longer has runtime-populated dunder globals, so the `session-variables` rule (`\b__[a-zA-Z_]+__\b` → `variable.language.jade`) and its color rule were dropped. Dunder-shaped identifiers are now just ordinary unstyled identifiers; highlighting them as language built-ins was actively misleading. |
 | `use llm` runtime config (`llm.set_max_tokens`, etc.) | `llm.set_max_tokens(256)` | ✅ (implicit) | Ordinary dot-call on an identifier; no special grammar needed beyond what already exists. |
 
 ---
@@ -210,7 +215,7 @@ All items implemented and verified except the last, which stays deliberately out
 4. ✅ **`::` module-path operator** and **`from`/`as` keywords** (§5, §11) — full `use`/`from` import surface now tokenizes.
 5. ✅ **Type-name highlighting at struct instantiation and typed-catch sites** (§9, §10) — both new rules added and verified not to double-match definition sites.
 6. ✅ **`0b` binary integer literals** (§2) — new rule, verified against `examples/demo.jde`.
-7. ✅ **`write` / `input` builtins**, **session dunder variables** (§7, §12) — both added.
+7. ✅ **`write` / `input` builtins** (§7) — added. (Session dunder variables were added alongside them and have since been removed — see §12 — after the language dropped them.)
 8. ✅ **Decorators** (§13) — implemented after confirming the real syntax against `joericks1998/jade`'s parser source and tests (see §13 for the exact grammar and citations), rather than guessing from the single changelog line.
 
 ### Verification method
@@ -230,7 +235,7 @@ rather than depending on how each theme happens to color generic TextMate scopes
 |---|---|---|
 | `keyword.other.prompt.jade` | `#00A86B` | Brand green — `prompt`, `?deref`, `~>` |
 | `support.function.builtin.jade` | `#0095ff` | Blue — `print`, `len`, `write`, `input` |
-| `keyword.control.jade` | `#C586C0` | Violet — `if`/`while`/`return`/`await`/etc. |
+| `keyword.control.jade` | `#C586C0` | Orchid — `if`/`while`/`return`/`await`/etc. (pinker than the `#B392F0` used for call sites) |
 | `keyword.declaration.jade` | `#4FA6E0` | Blue — `let`/`fn`/`use`/`async`/`from`/`as`/etc. |
 | `keyword.other.jade` | `#8AA3B0` | Muted slate — `self` |
 | `keyword.operator.path.jade` | `#7A93A6` | Muted slate — `::` |
@@ -238,16 +243,21 @@ rather than depending on how each theme happens to color generic TextMate scopes
 | `constant.language.boolean.jade` | `#4FC1FF` | Azure — `true`/`false` |
 | `constant.language.null.jade` | `#4FC1FF` | Azure — `nil`/`None`/`null` |
 | `constant.numeric.integer.jade` / `.float.jade` | `#8FD19E` | Soft green — numeric literals |
-| `entity.name.function.jade` | `#5FB3B3` | Teal-cyan — `fn` names |
+| `entity.name.function.jade` | `#5FB3B3` | Teal-cyan — `fn` names at definition sites |
+| `entity.name.function.call.jade` | `#B392F0` | Violet — callee at invocation sites (plain, method, and module-path calls). Deliberately outside the warm range: the first attempt used a soft yellow that blurred into the string salmon `#CE9178`. |
 | `entity.name.type.jade` | `#4EC9B0` | Teal — struct/interface names (definitions, instantiation, typed catch) |
 | `entity.other.inherited-class.jade` | `#7FCB9C` | Light green-teal — interface name in `extend X: Y` |
-| `variable.language.jade` | `#4FA6E0` | Blue — `__tokens__` etc. |
 | `variable.parameter.jade` | `#9CDCFE` | Light blue — closure params |
 | `punctuation.decorator.jade` | `#8AA3B0` | Muted slate — the `@` sigil (shares a hue with `self`) |
 | `entity.name.function.decorator.jade` | `#7FD1AE` | Mint green — decorator names |
+| `meta.embedded.line.jade` | `#D4D4D4` | Default foreground — resets f-string interpolation bodies to normal code coloring |
+| `punctuation.section.embedded.begin.jade` / `.end.jade` | `#8AA3B0` | Muted slate — the `{`/`}` of an f-string interpolation (shares a hue with `self` and `@`) |
 
 The whole palette stays in the blue/teal/green/violet range by design — no yellow or orange —
-so it reads as one deliberate system rather than a grab-bag of theme defaults.
+so it reads as one deliberate system rather than a grab-bag of theme defaults. This is a real
+constraint, not a description: the f-string and call-site work initially reached for `#DCDCAA`
+and `#D7BA7D`, both of which broke the rule *and* blurred into the theme's string salmon
+`#CE9178`. Anything warm will collide with strings — stay in the cool range.
 
 ---
 
@@ -261,7 +271,7 @@ Functions: `fn`, closures `|params| body`, implicit return, recursion, first-cla
 Structs: `struct`, `extend`, `extend … : Interface`, `interface`, field access/assignment, method calls, struct literals
 Exceptions: `raise`, `try`/`catch`, typed `catch TypeName binding`
 Imports: `use "path" as alias`, `use pkg::sub`, `from pkg::sub use a, b`, library imports via `jade.toml [lib]`, native imports via `jade.toml [native]`
-LLM: `prompt`, `?deref`, `?deref |> type`, session vars (`__tokens__` etc.), `use llm` runtime config
+LLM: `prompt`, `?deref`, `?deref |> type`, `use llm` runtime config
 Operators: `+ - * / %`, `& | ^ ~ << >>`, `&& || !`, `== != < > <= >=`, `=`, `|>`, `::`, `~>`
 Decorators: `@name`, `@ns::name` (undocumented shape)
 Built-ins: `print`, `write`, `len`, `input`

@@ -148,6 +148,12 @@ triple f-string
 value: {single}
 """
 
+// Interpolations hold real code: nested string args, calls, and brace literals
+// all stay distinguishable from the surrounding string text.
+print(f"basename   = {strlib.basename("/usr/local/lib/libglib.so")}")
+print(f"has prefix = {strlib.has_prefix("jadelang", "jade")}")
+print(f"point      = {Animal { name: "Dog", legs: 4, sound: "woof" }}")
+
 // --- Imports: ::, from ... use, as ---
 
 use std::math
@@ -180,12 +186,6 @@ try {
 } catch e {
     print("unexpected error")
 }
-
-// --- Session variables ---
-
-print(__tokens__)
-print(__model__)
-print(__max_retries__)
 
 // --- Decorators ---
 

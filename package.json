@@ -2,7 +2,7 @@
   "name": "jadelang-extension",
   "displayName": "Jade Language",
   "description": "Syntax highlighting for the Jade programming language (.jde files)",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "publisher": "joericks",
   "engines": {
     "vscode": "^1.75.0"
@@ -102,6 +102,12 @@
             }
           },
           {
+            "scope": "entity.name.function.call.jade",
+            "settings": {
+              "foreground": "#B392F0"
+            }
+          },
+          {
             "scope": "entity.name.type.jade",
             "settings": {
               "foreground": "#4EC9B0"
@@ -111,12 +117,6 @@
             "scope": "entity.other.inherited-class.jade",
             "settings": {
               "foreground": "#7FCB9C"
-            }
-          },
-          {
-            "scope": "variable.language.jade",
-            "settings": {
-              "foreground": "#4FA6E0"
             }
           },
           {
@@ -135,6 +135,21 @@
             "scope": "entity.name.function.decorator.jade",
             "settings": {
               "foreground": "#7FD1AE"
+            }
+          },
+          {
+            "scope": "meta.embedded.line.jade",
+            "settings": {
+              "foreground": "#D4D4D4"
+            }
+          },
+          {
+            "scope": [
+              "punctuation.section.embedded.begin.jade",
+              "punctuation.section.embedded.end.jade"
+            ],
+            "settings": {
+              "foreground": "#8AA3B0"
             }
           }
         ]
