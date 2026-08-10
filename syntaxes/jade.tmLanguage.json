@@ -5,32 +5,39 @@
   "fileTypes": ["jde"],
   "patterns": [
     { "include": "#comment" },
-    { "include": "#fstring-triple-double" },
-    { "include": "#fstring-triple-single" },
-    { "include": "#fstring-double" },
-    { "include": "#fstring-single" },
-    { "include": "#string-triple-double" },
-    { "include": "#string-triple-single" },
-    { "include": "#string-double" },
-    { "include": "#string-single" },
-    { "include": "#prompt-member-deref" },
-    { "include": "#prompt-deref" },
-    { "include": "#exception-catch-typed" },
-    { "include": "#decorator" },
-    { "include": "#function-declaration" },
-    { "include": "#type-declaration" },
-    { "include": "#struct-literal" },
-    { "include": "#keywords" },
-    { "include": "#storage-types" },
-    { "include": "#constants" },
-    { "include": "#constants-nil" },
-    { "include": "#session-variables" },
-    { "include": "#numbers" },
-    { "include": "#support-functions" },
-    { "include": "#closure-params" },
-    { "include": "#operators" }
+    { "include": "#expression" }
   ],
   "repository": {
+    "expression": {
+      "comment": "Everything except line comments. Split out from the top-level list so f-string interpolations can reuse it: a `//` inside `{...}` is division-adjacent noise at worst, but as a comment rule it would swallow the closing brace and quote and wreck the rest of the line.",
+      "patterns": [
+        { "include": "#fstring-triple-double" },
+        { "include": "#fstring-triple-single" },
+        { "include": "#fstring-double" },
+        { "include": "#fstring-single" },
+        { "include": "#string-triple-double" },
+        { "include": "#string-triple-single" },
+        { "include": "#string-double" },
+        { "include": "#string-single" },
+        { "include": "#prompt-member-deref" },
+        { "include": "#prompt-deref" },
+        { "include": "#exception-catch-typed" },
+        { "include": "#decorator" },
+        { "include": "#function-declaration" },
+        { "include": "#type-declaration" },
+        { "include": "#struct-literal" },
+        { "include": "#keywords" },
+        { "include": "#storage-types" },
+        { "include": "#constants" },
+        { "include": "#constants-nil" },
+        { "include": "#numbers" },
+        { "include": "#support-functions" },
+        { "include": "#function-call" },
+        { "include": "#closure-params" },
+        { "include": "#operators" }
+      ]
+    },
+
     "comment": {
       "name": "comment.line.double-slash.jade",
       "match": "//.*$"
@@ -42,7 +49,7 @@
     },
 
     "fstring-interpolation": {
-      "comment": "shared {expr} interpolation body for all f-string variants",
+      "comment": "shared {expr} interpolation body for all f-string variants. `meta.embedded.line.jade` sits on top of the enclosing string scope so the theme rule for it can reset the interpolated code back to normal code coloring — without it the expression inherits the string foreground and `f\"x = {foo(bar)}\"` renders as one undifferentiated orange run.",
       "name": "meta.embedded.line.jade",
       "begin": "\\{",
       "beginCaptures": {
@@ -52,7 +59,20 @@
       "endCaptures": {
         "0": { "name": "punctuation.section.embedded.end.jade" }
       },
-      "patterns": [{ "include": "$self" }]
+      "patterns": [
+        { "include": "#fstring-nested-braces" },
+        { "include": "#expression" }
+      ]
+    },
+
+    "fstring-nested-braces": {
+      "comment": "Balances inner braces — dict literals and struct literals inside an interpolation, e.g. f\"{Point { x: 1 }}\" — so the first inner `}` doesn't close the interpolation early.",
+      "begin": "\\{",
+      "end": "\\}",
+      "patterns": [
+        { "include": "#fstring-nested-braces" },
+        { "include": "#expression" }
+      ]
     },
 
     "fstring-triple-double": {
@@ -254,12 +274,6 @@
       "match": "\\b(nil|None|null)\\b"
     },
 
-    "session-variables": {
-      "comment": "read-only-by-convention globals pre-populated by the runtime: __tokens__, __model__, __max_retries__, __retry_log__",
-      "name": "variable.language.jade",
-      "match": "\\b__[a-zA-Z_]+__\\b"
-    },
-
     "numbers": {
       "patterns": [
         {
@@ -281,6 +295,14 @@
     "support-functions": {
       "name": "support.function.builtin.jade",
       "match": "\\b(print|len|write|input)\\b(?=\\s*\\()"
+    },
+
+    "function-call": {
+      "comment": "name(...) — every call site: plain calls, `extend`-block methods and other dot-calls (`bird.is_bipedal()`, `math.sqrt(…)`), and the trailing segment of a module-path call like `pkg::helper(…)`. One rule covers all three because `\\b` matches after a `.` or a `:` just as it does after a space, so the receiver and the path separators fall to their own rules and only the callee is captured. Deliberately placed AFTER keywords, storage-types, constants and support-functions in the `expression` list: those all match the same bare-identifier shape, so an earlier position here would repaint `if (x)`, `int(1, 6)`, and `print(x)` as ordinary calls. `fn name(` is likewise claimed earlier by `function-declaration`, so definitions keep their own color.",
+      "match": "\\b([A-Za-z_][A-Za-z0-9_]*)\\s*(?=\\()",
+      "captures": {
+        "1": { "name": "entity.name.function.call.jade" }
+      }
     },
 
     "closure-params": {
